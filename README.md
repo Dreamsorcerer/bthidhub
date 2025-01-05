@@ -4,7 +4,7 @@
 
 <img src="bthidhubarchitecture.png" width="700" alt="BT HID Hub Architecture Diagram"/>
 
-This hub uses a modified version of the Bluez linux bluetooth protocol stack (https://github.com/ruundii/bluez).
+This hub uses a modified version of the Bluez linux bluetooth protocol stack (https://github.com/Dreamsorcerer/bluez).
 The modified version extends bluetooth input profile to be able to **simultaneously** support host and device
 connections (vs default input device connections only).  With this you can e.g. retransmit Bluetooth input devices to other machines.
 
@@ -74,7 +74,7 @@ sudo systemctl restart remapper
 The `mypyc` command may take upto 20 mins, but will help optimise the performance.
 
 Additionally, you should check if there were any changes in the install/ directory
-(https://github.com/ruundii/bthidhub/commits/master/install).
+(https://github.com/Dreamsorcerer/bthidhub/commits/master/install).
 You may need to manually make changes to the system to match the changes in the installation.
 
 ## Misc

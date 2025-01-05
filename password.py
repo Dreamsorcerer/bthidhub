@@ -1,4 +1,4 @@
-# Copyright (c) 2020 ruundii. All rights reserved.
+# Copyright © bthidhub contributors
 
 import crypt,  spwd, subprocess
 

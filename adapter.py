@@ -1,4 +1,4 @@
-# Copyright (c) 2020 ruundii. All rights reserved.
+# Copyright © bthidhub contributors
 
 import asyncio
 from collections.abc import Container
@@ -28,7 +28,6 @@ class _GetDevices(TypedDict):
     scanning: bool
 
 
-DBUS_PATH_PROFILE = '/ruundii/btkb_profile'
 DBUS_PATH_AGENT = '/ruundii/btkb_agent'
 ROOT_OBJECT = '/org/bluez'
 ADAPTER_OBJECT = '/org/bluez/hci0'
