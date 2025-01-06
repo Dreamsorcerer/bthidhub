@@ -10,7 +10,7 @@ git clone https://github.com/Dreamsorcerer/bluez.git --depth 1
 cd $HOME/bthidhub/install/on_rpi/bluez
 autoreconf -fvi
 
-./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var --disable-a2dp --disable-avrcp --disable-network --disable-manpages
+./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-a2dp --disable-avrcp --disable-network --disable-manpages
 automake
 make -j4
 
