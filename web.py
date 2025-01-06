@@ -1,4 +1,4 @@
-# Copyright (c) 2020 ruundii. All rights reserved.
+# Copyright © bthidhub contributors
 
 from aiohttp import web,WSMessage
 from password import *

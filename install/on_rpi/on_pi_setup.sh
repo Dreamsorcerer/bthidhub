@@ -2,33 +2,15 @@ cd $HOME/bthidhub/install/on_rpi
 
 sudo echo 0 | sudo tee /sys/class/leds/ACT/brightness > /dev/null
 
-systemctl --user stop pulseaudio.socket
-systemctl --user stop pulseaudio.service
-systemctl --user disable pulseaudio.socket
-systemctl --user disable pulseaudio.service
-systemctl --user mask pulseaudio.socket
-systemctl --user mask pulseaudio.service
-
-sudo systemctl  stop pulseaudio.socket
-sudo systemctl  stop pulseaudio.service
-sudo systemctl  disable pulseaudio.socket
-sudo systemctl  disable pulseaudio.service
-sudo systemctl  mask pulseaudio.socket
-sudo systemctl  mask pulseaudio.service
-
-systemctl --user stop obex
-systemctl --user disable obex
-systemctl --user mask obex
-
 sudo apt-get install libcairo2-dev libdbus-1-dev libgirepository1.0-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf automake libtool python3-pip -y
-sudo pip3 install -r $HOME/bthidhub/requirements.txt
+sudo pip3 install -r $HOME/bthidhub/requirements.txt --break-system-packages
 
 cd $HOME/bthidhub/install/on_rpi
-git clone https://github.com/Dreamsorcerer/bluez.git
+git clone https://github.com/Dreamsorcerer/bluez.git --depth 1
 cd $HOME/bthidhub/install/on_rpi/bluez
 autoreconf -fvi
 
-./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var --disable-a2dp --disable-avrcp --disable-network
+./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-a2dp --disable-avrcp --disable-network --disable-manpages
 automake
 make -j4
 
