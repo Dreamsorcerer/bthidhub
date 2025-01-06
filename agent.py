@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Callable, Optional, TypedDict
+from typing import Callable, Optional, Required, TypedDict
 
 import dasbus.typing as dt
 from dasbus.server.interface import dbus_interface
@@ -10,7 +10,7 @@ from dasbus.connection import SystemMessageBus
 
 
 class Action(TypedDict, total=False):
-    action: str
+    action: Required[str]
     device: dt.ObjPath
     entered: dt.UInt16
     passkey: str

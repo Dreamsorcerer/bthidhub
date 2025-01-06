@@ -1,6 +1,7 @@
 # Copyright (c) 2020 ruundii. All rights reserved.
 
 import asyncio
+import time
 from collections.abc import Container
 from datetime import datetime, timedelta
 from typing import Awaitable, Callable, Optional, TypedDict, cast
@@ -262,6 +263,14 @@ class BluetoothAdapter:
         self.on_agent_action_handler = handler
 
     def on_agent_action(self, msg: Action) -> None:
+        if msg["action"] == "agent_released":
+            # Probably bluetooth service restarting.
+            time.sleep(1)
+            agent_manager = self.bus.get_proxy(service_name="org.bluez", object_path="/org/bluez",
+                                               interface_name="org.bluez.AgentManager1")
+            agent_manager.RegisterAgent(DBUS_PATH_AGENT, "KeyboardDisplay")
+            agent_manager.RequestDefaultAgent(DBUS_PATH_AGENT)
+
         if self.on_agent_action_handler is not None:
             asyncio.run_coroutine_threadsafe(self.on_agent_action_handler(msg), loop=self.loop)
 
