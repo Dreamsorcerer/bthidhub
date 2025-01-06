@@ -6,7 +6,7 @@ sudo apt-get install libcairo2-dev libdbus-1-dev libgirepository1.0-dev libglib2
 sudo pip3 install -r $HOME/bthidhub/requirements.txt --break-system-packages
 
 cd $HOME/bthidhub/install/on_rpi
-git clone https://github.com/Dreamsorcerer/bluez.git
+git clone https://github.com/Dreamsorcerer/bluez.git --depth 1
 cd $HOME/bthidhub/install/on_rpi/bluez
 autoreconf -fvi
 
