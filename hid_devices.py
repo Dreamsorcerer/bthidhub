@@ -127,7 +127,7 @@ class HIDDevice:
     mapped_ids: dict[Union[int, Literal["_"]], bytes]
 
     def __init__(self, device: _Device, filter: HIDMessageFilter,
-                 loop: asyncio.AbstractEventLoop, device_registry: HIDDeviceRegistry):
+                 loop: asyncio.AbstractEventLoop, device_registry: "HIDDeviceRegistry"):
         self.loop = loop
         self.filter = filter
         self.device_registry = device_registry
