@@ -10,7 +10,11 @@ connections (vs default input device connections only).  With this you can e.g. 
 
 The **Bluetooth HID hub** presents itself to a host computer as a Bluetooth multifunctional device.
 The hub receives events from multiple input devices (wired and BT) and then transmits them to the host,
-essentially acting as a proxy. This has been tested on a **Raspberry Pi Zero W**.
+essentially acting as a proxy.
+
+This has been tested on a **Raspberry Pi Zero W**. It is unlikely to work on older devices. For example, the
+Raspberry Pi 2 has been reported to have severe mouse pointer lag. This is probably due to not having enough
+single core performance. The Zero is probably the absolute minimum spec that this project can run reasonably on.
 
 ## Install Instructions
 
