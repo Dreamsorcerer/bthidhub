@@ -1,7 +1,5 @@
 # Copyright © bthidhub contributors
 
-from __future__ import annotations
-
 import array
 import asyncio
 import fcntl
@@ -14,7 +12,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Awaitable, Callable, Literal, Optional, TypedDict, Union, cast
+from typing import Awaitable, Callable, Final, Literal, Optional, TypeAlias, TypedDict, Union, cast
 
 import evdev
 from watchfiles import awatch
@@ -22,7 +20,7 @@ from watchfiles import awatch
 from bluetooth_devices import BluetoothDeviceRegistry
 from compatibility_device import CompatibilityModeDevice
 
-HIDMessageFilter = Callable[[bytes], Optional[bytes]]
+HIDMessageFilter: TypeAlias = Callable[[bytes], Optional[bytes]]
 
 
 class __Device(TypedDict, total=False):
@@ -64,17 +62,17 @@ class FilterDict(TypedDict):
     func: HIDMessageFilter
 
 
-DEVICES_CONFIG_FILE_NAME = 'devices_config.json'
-DEVICES_CONFIG_COMPATIBILITY_DEVICE_KEY = 'compatibility_devices'
-CAPTURE_ELEMENT: Literal['capture'] = 'capture'
-FILTER_ELEMENT: Literal['filter'] = 'filter'
+DEVICES_CONFIG_FILE_NAME: Final = "devices_config.json"
+DEVICES_CONFIG_COMPATIBILITY_DEVICE_KEY: Final = "compatibility_devices"
+CAPTURE_ELEMENT: Final[Literal['capture']] = "capture"
+FILTER_ELEMENT: Final[Literal['filter']] = "filter"
 # TODO: https://github.com/mypyc/mypyc/issues/700
-FILTERS_PATH = Path(".") / "filters"  # Path(__file__).parent
-REPORT_ID_PATTERN = re.compile(r"(a10185)(..)")
-SDP_TEMPLATE_PATH = Path("sdp_record_template.xml")  # Path(__file__).with_name("sdp_record_template.xml")
-SDP_OUTPUT_PATH = Path("/etc/bluetooth/sdp_record.xml")
+FILTERS_PATH: Final = Path(".") / "filters"  # Path(__file__).parent
+REPORT_ID_PATTERN: Final = re.compile(r"(a10185)(..)")
+SDP_TEMPLATE_PATH: Final = Path("sdp_record_template.xml")  # Path(__file__).with_name("sdp_record_template.xml")
+SDP_OUTPUT_PATH: Final = Path("/etc/bluetooth/sdp_record.xml")
 
-FILTERS: dict[str, FilterDict] = {"_": {"name": "No filter", "func": lambda m: m}}
+FILTERS: Final[dict[str, FilterDict]] = {"_": {"name": "No filter", "func": lambda m: m}}
 for mod_path in FILTERS_PATH.glob("*.py"):
     if mod_path.stem == "__init__":
         continue
@@ -85,15 +83,15 @@ for mod_path in FILTERS_PATH.glob("*.py"):
 
 # https://github.com/bentiss/hid-tools/blob/59a0c4b153dbf7d443e63bf68ff830b8353f5f7a/hidtools/hidraw.py#L33-L104
 
-_IOC_READ = 2
-_IOC_NRBITS = 8
-_IOC_TYPEBITS = 8
-_IOC_SIZEBITS = 14
+_IOC_READ: Final = 2
+_IOC_NRBITS: Final = 8
+_IOC_TYPEBITS: Final = 8
+_IOC_SIZEBITS: Final = 14
 
-_IOC_NRSHIFT = 0
-_IOC_TYPESHIFT = _IOC_NRSHIFT + _IOC_NRBITS
-_IOC_SIZESHIFT = _IOC_TYPESHIFT + _IOC_TYPEBITS
-_IOC_DIRSHIFT = _IOC_SIZESHIFT + _IOC_SIZEBITS
+_IOC_NRSHIFT: Final = 0
+_IOC_TYPESHIFT: Final = _IOC_NRSHIFT + _IOC_NRBITS
+_IOC_SIZESHIFT: Final = _IOC_TYPESHIFT + _IOC_TYPEBITS
+_IOC_DIRSHIFT: Final = _IOC_SIZESHIFT + _IOC_SIZEBITS
 
 def _IORH(nr: int, size: int) -> int:
     return (

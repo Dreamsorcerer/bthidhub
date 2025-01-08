@@ -1,9 +1,10 @@
 import asyncio
+from typing import Final
 
 from evdev import InputDevice, categorize, ecodes
 from hidtools.uhid import UHIDDevice
 
-CONSUMER_KEYS_EVENT_TO_USAGE_FLAG_MAPPING = {
+CONSUMER_KEYS_EVENT_TO_USAGE_FLAG_MAPPING: Final = {
     ecodes.KEY_NEXTSONG : 0x01, # Usage (Scan Next Track)
     ecodes.KEY_PREVIOUSSONG : 0x02, # Usage (Scan Previous Track)
     ecodes.KEY_STOP : 0x04,  # Usage (Stop)
@@ -13,7 +14,7 @@ CONSUMER_KEYS_EVENT_TO_USAGE_FLAG_MAPPING = {
     ecodes.KEY_VOLUMEDOWN : 0x40,  # Usage (Volume Decrement)
 }
 
-MODIFIER_KEYS_EVENT_TO_USAGE_FLAG_MAPPING = {
+MODIFIER_KEYS_EVENT_TO_USAGE_FLAG_MAPPING: Final = {
     ecodes.KEY_LEFTCTRL : 0x01,
     ecodes.KEY_LEFTSHIFT : 0x02,
     ecodes.KEY_LEFTALT : 0x04,
@@ -26,7 +27,7 @@ MODIFIER_KEYS_EVENT_TO_USAGE_FLAG_MAPPING = {
 
 #see https://www.usb.org/sites/default/files/hut1_2.pdf
 #a bit unsure about US layouts and HID usage 31, now producing 0x32 usage for key_backslash, not sure if 0x31 need to be produced for us backslash. also ecodes.KEY_102ND
-NORMAL_KEYS_EVENT_TO_USAGE_FLAG_MAPPING = {
+NORMAL_KEYS_EVENT_TO_USAGE_FLAG_MAPPING: Final = {
     ecodes.KEY_RESERVED : 0x00,
     ecodes.KEY_A: 0x04,
     ecodes.KEY_B: 0x05,

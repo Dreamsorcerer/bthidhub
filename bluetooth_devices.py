@@ -6,20 +6,20 @@ import os
 from concurrent.futures import Future
 from contextlib import suppress
 from subprocess import DEVNULL, PIPE
-from typing import Awaitable, Callable, Optional, TYPE_CHECKING
+from typing import Awaitable, Callable, Final, Optional, TYPE_CHECKING
 
 from dasbus.connection import SystemMessageBus
 
 if TYPE_CHECKING:
     from hid_devices import HIDDeviceRegistry
 
-OBJECT_MANAGER_INTERFACE = 'org.freedesktop.DBus.ObjectManager'
-DEVICE_INTERFACE = 'org.bluez.Device1'
-PROPERTIES_INTERFACE = 'org.freedesktop.DBus.Properties'
-INPUT_DEVICE_INTERFACE = 'org.bluez.Input1'
-INPUT_HOST_INTERFACE = 'org.bluez.InputHost1'
+OBJECT_MANAGER_INTERFACE: Final = "org.freedesktop.DBus.ObjectManager"
+DEVICE_INTERFACE: Final = "org.bluez.Device1"
+PROPERTIES_INTERFACE: Final = "org.freedesktop.DBus.Properties"
+INPUT_DEVICE_INTERFACE: Final = "org.bluez.Input1"
+INPUT_HOST_INTERFACE: Final = "org.bluez.InputHost1"
 
-IGNORE_INPUT_DEVICES = True
+IGNORE_INPUT_DEVICES: Final = True
 
 class BluetoothDevice:
     def __init__(self, bus: SystemMessageBus, loop: asyncio.AbstractEventLoop,

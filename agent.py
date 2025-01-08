@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Required, TypedDict
+from typing import Callable, Final, Optional, Required, TypedDict
 
 import dasbus.typing as dt
 from dasbus.server.interface import dbus_interface
@@ -17,7 +17,7 @@ class Action(TypedDict, total=False):
     pincode: str
 
 
-bus = SystemMessageBus()
+bus: Final = SystemMessageBus()
 
 def ask(prompt: str) -> str:
 	return input(prompt)

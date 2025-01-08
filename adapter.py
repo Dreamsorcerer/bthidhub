@@ -4,7 +4,7 @@ import asyncio
 import time
 from collections.abc import Container
 from datetime import datetime, timedelta
-from typing import Awaitable, Callable, Optional, TypedDict, cast
+from typing import Awaitable, Callable, Final, Optional, TypedDict, cast
 
 from dasbus.connection import InterfaceProxy, SystemMessageBus
 import dasbus.typing as dt
@@ -29,14 +29,14 @@ class _GetDevices(TypedDict):
     scanning: bool
 
 
-DBUS_PATH_AGENT = '/ruundii/btkb_agent'
-ROOT_OBJECT = '/org/bluez'
-ADAPTER_OBJECT = '/org/bluez/hci0'
-ADAPTER_INTERFACE = 'org.bluez.Adapter1'
-DEVICE_INTERFACE = 'org.bluez.Device1'
-OBJECT_MANAGER_INTERFACE = 'org.freedesktop.DBus.ObjectManager'
-DEVICE_NAME = 'Bluetooth HID Hub - RPi'
-UUID = '00001124-0000-1000-8000-00805f9b34fb'
+DBUS_PATH_AGENT: Final = "/ruundii/btkb_agent"
+ROOT_OBJECT: Final = "/org/bluez"
+ADAPTER_OBJECT: Final = "/org/bluez/hci0"
+ADAPTER_INTERFACE: Final = "org.bluez.Adapter1"
+DEVICE_INTERFACE: Final = "org.bluez.Device1"
+OBJECT_MANAGER_INTERFACE: Final = "org.freedesktop.DBus.ObjectManager"
+DEVICE_NAME: Final = "Bluetooth HID Hub - RPi"
+UUID: Final = "00001124-0000-1000-8000-00805f9b34fb"
 
 
 class BluetoothAdapter:
