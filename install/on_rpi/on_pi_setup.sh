@@ -34,8 +34,8 @@ sudo systemctl start bluetooth
 sudo systemctl enable remapper.service
 sudo systemctl start remapper.service
 
-sudo hostnamectl set-hostname bthidhub
 sudo sed -Ei 's/^127\.0\.1\.1.*$/127.0.1.1\tbthidhub/' /etc/hosts
+sudo hostnamectl set-hostname bthidhub
 
 # Compile some Python modules to reduce lag.
 # We do this at the end, as the project is already usable without this step.
