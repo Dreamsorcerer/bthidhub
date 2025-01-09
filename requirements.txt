@@ -1,7 +1,6 @@
 aiohttp!=3.7.*
 aiohttp-security
 aiohttp-session
-bitarray  # TODO: remove
 dasbus
 evdev
 hid-tools>=0.7

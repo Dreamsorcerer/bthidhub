@@ -92,7 +92,7 @@ class Web:
         for ws in self.ws:
             try:
                 await asyncio.wait_for(ws.send_json({"msg": "hid_devices_updated"}), 5)
-            except (asyncio.TimeoutError, RuntimeError):
+            except (TimeoutError, RuntimeError):
                 self.ws.discard(ws)
                 await ws.close()
 
@@ -236,8 +236,7 @@ class Web:
                             pass
                             #await ws.send_json({'msg':'connected'})
                 elif msg.type == web.WSMsgType.ERROR:
-                    print('ws connection closed with exception %s' %
-                          ws.exception())
+                    print(f"ws connection closed with exception {ws.exception()}")
         finally:
             self.ws.discard(ws)
         print('websocket connection closed')

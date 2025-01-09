@@ -11,8 +11,9 @@ import struct
 import subprocess
 import sys
 import time
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Awaitable, Callable, Final, Literal, Optional, TypeAlias, TypedDict, Union, cast
+from typing import Final, Literal, TypeAlias, TypedDict, cast
 
 import evdev
 from watchfiles import awatch
@@ -20,7 +21,7 @@ from watchfiles import awatch
 from bluetooth_devices import BluetoothDeviceRegistry
 from compatibility_device import CompatibilityModeDevice
 
-HIDMessageFilter: TypeAlias = Callable[[bytes], Optional[bytes]]
+HIDMessageFilter: TypeAlias = Callable[[bytes], bytes | None]
 
 
 class __Device(TypedDict, total=False):
@@ -54,7 +55,7 @@ class _DeviceConfig(TypedDict, total=False):
     capture: bool
     descriptor: str
     filter: str
-    mapped_ids: dict[Union[int, Literal["_"]], int]
+    mapped_ids: dict[int | Literal["_"], int]
 
 
 class FilterDict(TypedDict):
@@ -124,7 +125,7 @@ def _HIDIOCGRDESC(fd: int) -> "array.array[int]":
 
 
 class HIDDevice:
-    mapped_ids: dict[Union[int, Literal["_"]], bytes]
+    mapped_ids: dict[int | Literal["_"], bytes]
 
     def __init__(self, device: _Device, filter: HIDMessageFilter,
                  loop: asyncio.AbstractEventLoop, device_registry: "HIDDeviceRegistry"):
@@ -141,7 +142,7 @@ class HIDDevice:
             event_device = evdev.InputDevice('/dev/input/'+event)
             event_device.grab()
             self.events_devices.append(event_device)
-        self.hidraw_file: Optional[int] = os.open('/dev/'+self.hidraw, os.O_RDWR | os.O_NONBLOCK)
+        self.hidraw_file: int | None = os.open('/dev/'+self.hidraw, os.O_RDWR | os.O_NONBLOCK)
         loop.add_reader(self.hidraw_file, self.hidraw_event)
         print("HID Device ",self.device_id," created")
         desc = "".join(f"{b:02x}" for b in _HIDIOCGRDESC(self.hidraw_file))
@@ -243,9 +244,9 @@ class HIDDeviceRegistry:
         self.input_devices: list[_InputDevice] = []
         self.compatibility_mode_devices: dict[str, CompatibilityModeDevice] = {}
         asyncio.run_coroutine_threadsafe(self.__watch_device_changes(), loop=self.loop)
-        self.on_devices_changed_handler: Optional[Callable[[], Awaitable[None]]] = None
+        self.on_devices_changed_handler: Callable[[], Awaitable[None]] | None = None
         self.__scan_devices()
-        self.bluetooth_devices: Optional[BluetoothDeviceRegistry] = None
+        self.bluetooth_devices: BluetoothDeviceRegistry | None = None
 
     def set_bluetooth_devices(self, bluetooth_devices: BluetoothDeviceRegistry) -> None:
         self.bluetooth_devices = bluetooth_devices
@@ -293,7 +294,7 @@ class HIDDeviceRegistry:
         devs_in_compatibility_mode = []
         for device in os.listdir('/sys/bus/hid/devices'):
             try:
-                with open('/sys/bus/hid/devices/'+device+'/uevent', 'r') as uevent:
+                with open(f"/sys/bus/hid/devices/{device}/uevent") as uevent:
                     m = re.search('HID_NAME\s*=(.+)', uevent.read())
                     if m is not None:
                         name: str = m.group(1)
@@ -345,9 +346,8 @@ class HIDDeviceRegistry:
                 recreate_sdp = True
 
             dev_config["descriptor"] = hid_dev.descriptor
-            # TODO(PY311): Use to_bytes() defaults.
             # Need tuple to retain order (set is unordered, but dict is ordered).
-            keys: tuple[Union[int, Literal["_"]], ...] = tuple(int(i, base=16) for i in hid_dev.internal_ids) if hid_dev.internal_ids else ("_",)
+            keys: tuple[int | Literal["_"], ...] = tuple(int(i, base=16) for i in hid_dev.internal_ids) if hid_dev.internal_ids else ("_",)
             if dev_config.get("mapped_ids", {}).keys() != set(keys):
                 dev_config["mapped_ids"] = {i: 0 for i in keys}
                 recreate_sdp = True
@@ -373,7 +373,7 @@ class HIDDeviceRegistry:
         # Update the mapped IDs based on latest information.
         for hid_dev in self.capturing_devices.values():
             config_ids = self.devices_config[hid_dev.device_class]["mapped_ids"]
-            hid_dev.mapped_ids = {k: v.to_bytes(1, "big") for k,v in config_ids.items()}
+            hid_dev.mapped_ids = {k: v.to_bytes() for k,v in config_ids.items()}
         self.devices = devs
 
 

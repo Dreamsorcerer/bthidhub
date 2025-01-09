@@ -4,10 +4,11 @@ import asyncio
 import socket
 import os
 import sys
+from collections.abc import Awaitable, Callable
 from concurrent.futures import Future
 from contextlib import suppress
 from subprocess import DEVNULL, PIPE
-from typing import Awaitable, Callable, Final, Optional, TYPE_CHECKING
+from typing import Final, TYPE_CHECKING
 
 from dasbus.connection import SystemMessageBus
 
@@ -35,10 +36,10 @@ class BluetoothDevice:
         self.device_registry = device_registry
         self.object_path = object_path
         self.is_host = is_host
-        self.control_socket_path: Optional[str] = control_socket_path
-        self.control_socket: Optional[socket.socket] = None
-        self.interrupt_socket_path: Optional[str] = interrupt_socket_path
-        self.interrupt_socket: Optional[socket.socket] = None
+        self.control_socket_path: str | None = control_socket_path
+        self.control_socket: socket.socket | None = None
+        self.interrupt_socket_path: str | None = interrupt_socket_path
+        self.interrupt_socket: socket.socket | None = None
         self.sockets_connected = False
         self._tasks: set[Future[None]] = set()
 
@@ -176,8 +177,8 @@ class BluetoothDeviceRegistry:
         self.all: dict[str, BluetoothDevice] = {}
         self.connected_hosts: list[BluetoothDevice] = []
         self.connected_devices: list[BluetoothDevice] = []
-        self.on_devices_changed_handler: Optional[Callable[[], Awaitable[None]]] = None
-        self.hid_devices: Optional["HIDDeviceRegistry"] = None
+        self.on_devices_changed_handler: Callable[[], Awaitable[None]] | None = None
+        self.hid_devices: HIDDeviceRegistry | None = None
         self.current_host_index = 0
 
     def set_hid_devices(self, hid_devices: "HIDDeviceRegistry") -> None:

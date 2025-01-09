@@ -1,8 +1,9 @@
 # Copyright © bthidhub contributors
 
 import asyncio
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Callable, Final, Optional, Required, TypedDict
+from typing import Final, Required, TypedDict
 
 import dasbus.typing as dt
 from dasbus.server.interface import dbus_interface
@@ -38,9 +39,9 @@ def dev_connect(device_path: str) -> None:
 #@dbus_interface("org.bluez.Agent1")
 class Agent:
     def __init__(self) -> None:
-        self.on_agent_action_handler: Optional[Callable[[Action], None]] = None
-        self.request_confirmation_device: Optional[dt.ObjPath] = None
-        self.request_confirmation_passkey: Optional[str] = None
+        self.on_agent_action_handler: Callable[[Action], None] | None = None
+        self.request_confirmation_device: dt.ObjPath | None = None
+        self.request_confirmation_passkey: str | None = None
         self.__dbus_xml__ = '<node><!--Specifies Agent--><interface name="org.bluez.Agent1"><method name="AuthorizeService"><arg name="device" type="o" direction="in" /><arg name="uuid" type="s" direction="in" /></method><method name="Cancel" /><method name="DisplayPinCode"><arg name="device" type="o" direction="in" /><arg name="pincode" type="s" direction="in" /></method><method name="Release" /><method name="RequestAuthorization"><arg name="device" type="o" direction="in" /></method><method name="RequestConfirmation"><arg name="device" type="o" direction="in" /><arg name="passkey" type="u" direction="in" /></method><method name="RequestPasskey"><arg name="device" type="o" direction="in" /><arg name="return" type="u" direction="out" /></method><method name="RequestPinCode"><arg name="device" type="o" direction="in" /><arg name="return" type="s" direction="out" /></method></interface></node>'
 
     def Release(self) -> None:
@@ -48,7 +49,6 @@ class Agent:
         print("Agent Release")
 
     def AuthorizeService(self, device: dt.ObjPath, uuid: dt.Str) -> None:
-        print("AuthorizeService (%s, %s)" % (device, uuid))
         set_trusted(device)
         self.on_agent_action({'action':'service_autorised', 'device':device})
         # authorize = ask("Authorize connection (yes/no): ")
@@ -58,22 +58,18 @@ class Agent:
         # raise Exception("Connection rejected by user")
 
     def RequestPinCode(self, device: dt.ObjPath) -> dt.Str:
-        print("RequestPinCode (%s)" % (device))
         set_trusted(device)
         return ask("Enter PIN Code: ")
 
     def RequestPasskey(self, device: dt.ObjPath) -> dt.UInt32:
-        print("RequestPasskey (%s)" % (device))
         set_trusted(device)
         passkey = int(ask("Enter passkey: "))
         return dt.UInt32(passkey)
 
     def DisplayPinCode(self, device: dt.ObjPath, pincode: dt.Str) -> None:
-        print("DisplayPinCode (%s, %s)" % (device, pincode))
         self.on_agent_action({'action':'display_pin_code', 'pincode':pincode, 'device':device})
 
     def RequestConfirmation(self, device: dt.ObjPath, passkey: dt.UInt32) -> None:
-        print("RequestConfirmation (%s, %06d)" % (device, passkey))
         self.request_confirmation_device = device
         self.request_confirmation_passkey = str(passkey).zfill(6)
         self.on_agent_action({'action':'confirm_passkey', 'passkey':str(passkey).zfill(6), 'device':device})
@@ -86,7 +82,6 @@ class Agent:
             self.request_confirmation_passkey = None
 
     def RequestAuthorization(self, device: dt.ObjPath) -> None:
-        print("RequestAuthorization (%s)" % (device))
         auth = ask("Authorize? (yes/no): ")
         if (auth != "yes"):
             raise Exception("Pairing rejected")

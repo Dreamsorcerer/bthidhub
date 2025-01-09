@@ -2,9 +2,9 @@
 
 import asyncio
 import time
-from collections.abc import Container
+from collections.abc import Awaitable, Callable, Container
 from datetime import datetime, timedelta
-from typing import Awaitable, Callable, Final, Optional, TypedDict, cast
+from typing import Final, TypedDict, cast
 
 from dasbus.connection import InterfaceProxy, SystemMessageBus
 import dasbus.typing as dt
@@ -40,7 +40,7 @@ UUID: Final = "00001124-0000-1000-8000-00805f9b34fb"
 
 
 class BluetoothAdapter:
-    adapter: Optional[InterfaceProxy] = None
+    adapter: InterfaceProxy | None = None
 
     def __init__(self, bus: SystemMessageBus, loop: asyncio.AbstractEventLoop,
                  bluetooth_devices: BluetoothDeviceRegistry, hid_devices: HIDDeviceRegistry):
@@ -49,13 +49,13 @@ class BluetoothAdapter:
         self.bluetooth_devices = bluetooth_devices
         self.hid_devices = hid_devices
         self.agent_published = False
-        self.agent: Optional[Agent] = None
+        self.agent: Agent | None = None
         self.om_proxy_initialised = False
         self.initialising_adapter = False
-        self.scan_start_time: Optional[datetime] = None
-        self.discoverable_start_time: Optional[datetime] = None
-        self.on_agent_action_handler: Optional[Callable[[Action], Awaitable[None]]] = None
-        self.on_interface_changed_handler: Optional[Callable[[], Awaitable[None]]] = None
+        self.scan_start_time: datetime | None = None
+        self.discoverable_start_time: datetime | None = None
+        self.on_agent_action_handler: Callable[[Action], Awaitable[None]] | None = None
+        self.on_interface_changed_handler: Callable[[], Awaitable[None]] | None = None
         asyncio.run_coroutine_threadsafe(self.init(), loop=self.loop)
 
     async def init(self) -> None:
