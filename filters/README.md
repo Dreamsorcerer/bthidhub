@@ -195,7 +195,7 @@ This may take upto 20 mins to complete.
 When testing the MX Master 3 mouse, I found the side wheel was inverted.
 Reversing the direction of this is pretty simple. From the report descriptor or
 simply printing the events in the filter it was quick to see that the pointer
-events have a report ID of 2 and that the last byte of the event is the scroll
+events have a report ID of 2 and that the last byte of the event is the side
 wheel. Depending on how fast you turn it, the value of the last byte will
 increase from 01 upwards in one direction and from FF downwards in the other
 direction (00 at rest). So, we simply need to invert that byte.
