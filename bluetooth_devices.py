@@ -3,6 +3,7 @@
 import asyncio
 import socket
 import os
+import sys
 from concurrent.futures import Future
 from contextlib import suppress
 from subprocess import DEVNULL, PIPE
@@ -213,17 +214,21 @@ class BluetoothDeviceRegistry:
         print("switch to master called for ", device_address)
         while await self.is_slave(device_address):
             try:
-                proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "sr", device_address, "MASTER", stdout=DEVNULL)
+                proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "sr", device_address, "master", stdout=DEVNULL, stderr=sys.stderr)
                 await proc.wait()
                 print("hcitool ", device_address, " success:", proc.returncode == 0)
+                # Set the link policy, so it disables rswitch.
+                # This should stop the host from switching back to slave.
+                proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "lp", device_address, "sniff", stdout=DEVNULL, stderr=sys.stderr)
+                await proc.wait()
             except Exception as exc:
                 print("hcitool ",device_address," exception:",exc)
             await asyncio.sleep(5)
 
     async def is_slave(self, device_address: str) -> bool:
-        proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "con", stdout=PIPE, stderr=DEVNULL)
+        proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "con", stdout=PIPE, stderr=sys.stderr)
         stdout, stderr = await proc.communicate()
-        return any("SLAVE" in l and device_address in l for l in stdout.decode().split("\n"))
+        return any("PERIPHERAL" in l and device_address in l for l in stdout.decode().split("\n"))
 
     async def remove_devices(self) -> None:
         print("Removing all BT devices")

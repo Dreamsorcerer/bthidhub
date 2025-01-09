@@ -4,8 +4,8 @@ import asyncio
 import sys
 from signal import SIGINT
 
-import asyncio_glib
 from dasbus.connection import SystemMessageBus
+from gi.events import GLibEventLoopPolicy
 
 from adapter import BluetoothAdapter
 from bluetooth_devices import *
@@ -14,7 +14,7 @@ from web import Web
 
 if __name__ == "__main__":
     sys.stdout = sys.stderr
-    asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
+    asyncio.set_event_loop_policy(GLibEventLoopPolicy())
     loop = asyncio.get_event_loop()
     loop.add_signal_handler(SIGINT, sys.exit)
     bus = SystemMessageBus()
