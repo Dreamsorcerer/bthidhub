@@ -100,7 +100,7 @@ What if we change the ``80`` to ``01``, so we actually send 2 left-click events?
 Running that through ``hid-replay``, it works!
 
 It's also worth noting that the first byte is the report ID (1), we can use this when
-writing a filter, to ensure we only change pointer events.
+writing a filter to ensure we only change pointer events.
 
 ## Writing a filter
 
