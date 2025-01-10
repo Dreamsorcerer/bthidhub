@@ -8,7 +8,7 @@ from collections.abc import Awaitable, Callable
 from concurrent.futures import Future
 from contextlib import suppress
 from subprocess import DEVNULL, PIPE
-from typing import Final, TYPE_CHECKING
+from typing import Final, TYPE_CHECKING, cast
 
 from dasbus.connection import SystemMessageBus
 
@@ -228,7 +228,8 @@ class BluetoothDeviceRegistry:
 
     async def is_slave(self, device_address: str) -> bool:
         proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "con", stdout=PIPE, stderr=sys.stderr)
-        stdout, stderr = await proc.communicate()
+        # TODO(mypy1.15): Remove cast
+        stdout, _ = cast(tuple[bytes, None], await proc.communicate())
         return any("PERIPHERAL" in l and device_address in l for l in stdout.decode().split("\n"))
 
     async def remove_devices(self) -> None:
