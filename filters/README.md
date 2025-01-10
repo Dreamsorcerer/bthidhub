@@ -99,6 +99,9 @@ Hmm, it seems like the double-click actually sends 2 clicks of a different butto
 What if we change the ``80`` to ``01``, so we actually send 2 left-click events?
 Running that through ``hid-replay``, it works!
 
+It's also worth noting that the first byte is the report ID (1), we can use this when
+writing a filter to ensure we only change pointer events.
+
 ## Writing a filter
 
 To implement the fix we need to create a new filter function.
@@ -108,7 +111,7 @@ While ssh'd into the RPi, create the new file: ``bthidhub/filters/contour.py``:
 """Contour Rollermouse"""
 
 def message_filter(msg: bytes) -> bytes:
-    if len(msg) >= 10 and msg[9] == 0x80:
+    if msg[0] == 1 and msg[9] == 0x80:
         # Convert vendor specific double click (button 0x80), to normal double click (button 1).
         msg = msg[:9] + (b"\x01" if msg[1] else b"\x00") + msg[10:]
     return msg
@@ -152,7 +155,7 @@ class ContourMessageFilter:
     delay = False
 
     def filter_message(self, msg: bytes) -> bytes:
-        if len(msg) >= 10 and msg[9] == 0x80:
+        if msg[0] == 1 and msg[9] == 0x80:
             # Convert vendor specific double click (button 0x80), to normal double click (button 1).
             msg = msg[:9] + (b"\x01" if msg[1] else b"\x00") + msg[10:]
             if msg[1]:
@@ -186,6 +189,23 @@ mypyc
 ```
 
 This may take upto 20 mins to complete.
+
+## Another example
+
+When testing the MX Master 3 mouse, I found the side wheel was inverted.
+Reversing the direction of this is pretty simple. From the report descriptor or
+simply printing the events in the filter it was quick to see that the pointer
+events have a report ID of 2 and that the last byte of the event is the side
+wheel. Depending on how fast you turn it, the value of the last byte will
+increase from 01 upwards in one direction and from FF downwards in the other
+direction (00 at rest). So, we simply need to invert that byte.
+
+```
+def message_filter(msg: bytes) -> bytes:
+    if msg[0] == 2 and msg[-1] != 0:
+        msg = msg[:-1] + (256 - msg[-1]).to_bytes()
+    return msg
+```
 
 ## Notes
 
