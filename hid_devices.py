@@ -3,6 +3,7 @@
 import array
 import asyncio
 import fcntl
+import hashlib
 import importlib
 import os
 import json
@@ -28,9 +29,12 @@ class __Device(TypedDict, total=False):
     capture: bool
     filter: str
 
+class _Device_Id(str):
+    def __init__(self, device_class_id: str, device_descriptor: str):
+        super.__init__(self,hashlib.md5((device_class_id + device_descriptor).encode('utf-8')).hexdigest())
 
 class _Device(__Device):
-    id: str
+    class_id: str
     instance: str
     name: str
     hidraw: str
@@ -132,8 +136,8 @@ class HIDDevice:
         self.loop = loop
         self.filter = filter
         self.device_registry = device_registry
-        self.device_id = device["instance"]
-        self.device_class = device["id"]
+        self.device_instance = device["instance"]
+        self.device_class = device["class_id"]
         self.name = device["name"]
         self.hidraw = device["hidraw"]
         self.events = device["events"]
@@ -144,7 +148,7 @@ class HIDDevice:
             self.events_devices.append(event_device)
         self.hidraw_file: int | None = os.open('/dev/'+self.hidraw, os.O_RDWR | os.O_NONBLOCK)
         loop.add_reader(self.hidraw_file, self.hidraw_event)
-        print("HID Device ",self.device_id," created")
+        print("HID Device ",self.device_instance," created")
         desc = "".join(f"{b:02x}" for b in _HIDIOCGRDESC(self.hidraw_file))
         # Replace report IDs, so they can be remapped later.
         self.internal_ids = tuple(m[1] for m in cast(list[tuple[str, str]], REPORT_ID_PATTERN.findall(desc)))
@@ -152,6 +156,7 @@ class HIDDevice:
         # Or insert one if no report ID exists.
         if found == 0:
             self.descriptor = re.sub(r"(a101)", r"\g<1>85{}", self.descriptor, count=1)
+        self.device_id = _Device_Id(self.device_class, self.descriptor)
 
     def set_device_filter(self, filter: HIDMessageFilter) -> None:
         self.filter = filter
@@ -166,7 +171,7 @@ class HIDDevice:
             self.loop.remove_reader(self.hidraw_file)
             os.close(self.hidraw_file)
             self.hidraw_file = None
-            print("HID device ",self.device_id, " exception on read. closing")
+            print("HID device ",self.device_instance, " exception on read. closing")
             return
         tm = self.filter(msg)
         if tm is None or self.device_registry.bluetooth_devices is None:
@@ -225,10 +230,10 @@ class HIDDevice:
                 self.hidraw_file = None
             except:
                 pass
-        print("HID Device ",self.device_id," finalised")
+        print("HID Device ",self.device_instance," finalised")
 
     def __del__(self) -> None:
-        print("HID Device ",self.device_id," removed")
+        print("HID Device ",self.device_instance," removed")
 
 
 class HIDDeviceRegistry:
@@ -312,7 +317,7 @@ class HIDDeviceRegistry:
                             events.extend(input_events)
 
                         device_id = device.split(".")[0]
-                        devs.append({"id": device_id, "instance": device,
+                        devs.append({"class_id": device_id, "instance": device,
                                      "name": name, "hidraw": hidraw, "events": events,
                                      "compatibility_mode": compatibility_mode})
                         devs_dict[device] = device_id
@@ -339,10 +344,10 @@ class HIDDeviceRegistry:
         recreate_sdp = False
         # Refresh or create config details for currently connected devices.
         for hid_dev in self.capturing_devices.values():
-            dev_config = self.devices_config.get(hid_dev.device_class)
+            dev_config = self.devices_config.get(hid_dev.device_id)
             if not dev_config:
                 dev_config = {}
-                self.devices_config[hid_dev.device_class] = dev_config
+                self.devices_config[hid_dev.device_id] = dev_config
                 recreate_sdp = True
 
             dev_config["descriptor"] = hid_dev.descriptor
@@ -372,7 +377,7 @@ class HIDDeviceRegistry:
 
         # Update the mapped IDs based on latest information.
         for hid_dev in self.capturing_devices.values():
-            config_ids = self.devices_config[hid_dev.device_class]["mapped_ids"]
+            config_ids = self.devices_config[hid_dev.device_id]["mapped_ids"]
             hid_dev.mapped_ids = {k: v.to_bytes() for k,v in config_ids.items()}
         self.devices = devs
 
@@ -389,7 +394,7 @@ class HIDDeviceRegistry:
         self.__save_config()
         filter = self.__get_configured_device_filter(device_id)
         for dev in self.capturing_devices:
-            if self.capturing_devices[dev].device_class == device_id:
+            if self.capturing_devices[dev].device_id == device_id:
                 self.capturing_devices[dev].set_device_filter(filter)
 
     def set_compatibility_device(self, device_path: str, compatibility_state: bool) -> None:
@@ -421,9 +426,11 @@ class HIDDeviceRegistry:
 
     def get_hid_devices_with_config(self) -> _HIDDevices:
         for device in self.devices:
-            if device["id"] in self.devices_config:
-                device[CAPTURE_ELEMENT] = self.devices_config[device["id"]].get(CAPTURE_ELEMENT, False)
-                if FILTER_ELEMENT in self.devices_config[device["id"]]:
-                    device[FILTER_ELEMENT] =  self.devices_config[device["id"]][FILTER_ELEMENT]
+            device_id = next((x.device_id for x in self.devices_config if x.device_class_id == device["class_id"]), None)
+            if device_id != None:
+                device["id"] = device_id
+                device[CAPTURE_ELEMENT] = self.devices_config[device_id].get(CAPTURE_ELEMENT, False)
+                if FILTER_ELEMENT in self.devices_config[device_id]:
+                    device[FILTER_ELEMENT] =  self.devices_config[device_id][FILTER_ELEMENT]
         f = tuple({"id": k, "name": v["name"]} for k,v in FILTERS.items())
         return {"devices": self.devices, "filters": f, "input_devices": self.input_devices}
