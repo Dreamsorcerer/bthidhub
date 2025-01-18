@@ -30,8 +30,9 @@ class __Device(TypedDict, total=False):
     filter: str
 
 class _Device_Id(str):
-    def __init__(self, device_class_id: str, device_descriptor: str):
-        super.__init__(self,hashlib.md5((device_class_id + device_descriptor).encode('utf-8')).hexdigest())
+    def __new__(self, device_class_id: str, device_descriptor: str):
+        instance = super().__new__(self, hashlib.md5((device_class_id + device_descriptor).encode('utf-8')).hexdigest())
+        return instance
 
 class _Device(__Device):
     id: _Device_Id
@@ -439,11 +440,9 @@ class HIDDeviceRegistry:
 
     def get_hid_devices_with_config(self) -> _HIDDevices:
         for device in self.devices:
-            device_id = next((x.device_id for x in self.devices_config if x.device_class_id == device["class_id"]), None)
-            if device_id != None:
-                device["id"] = device_id
-                device[CAPTURE_ELEMENT] = self.devices_config[device_id].get(CAPTURE_ELEMENT, False)
-                if FILTER_ELEMENT in self.devices_config[device_id]:
-                    device[FILTER_ELEMENT] =  self.devices_config[device_id][FILTER_ELEMENT]
+            if device["id"] in self.devices_config:
+                device[CAPTURE_ELEMENT] = self.devices_config[device["id"]].get(CAPTURE_ELEMENT, False)
+                if FILTER_ELEMENT in self.devices_config[device["id"]]:
+                    device[FILTER_ELEMENT] =  self.devices_config[device["id"]][FILTER_ELEMENT]
         f = tuple({"id": k, "name": v["name"]} for k,v in FILTERS.items())
         return {"devices": self.devices, "filters": f, "input_devices": self.input_devices}
