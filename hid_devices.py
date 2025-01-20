@@ -29,10 +29,7 @@ class __Device(TypedDict, total=False):
     capture: bool
     filter: str
 
-class _Device_Id(str):
-    def __new__(self, device_class_id: str, device_descriptor: str):
-        instance = super().__new__(self, hashlib.md5((device_class_id + device_descriptor).encode('utf-8')).hexdigest())
-        return instance
+_Device_Id: TypeAlias = str
 
 class _Device(__Device):
     id: _Device_Id
@@ -74,7 +71,7 @@ DEVICES_CONFIG_FILE_NAME: Final = "devices_config.json"
 DEVICES_CONFIG_COMPATIBILITY_DEVICE_KEY: Final = "compatibility_devices"
 CAPTURE_ELEMENT: Final[Literal['capture']] = "capture"
 FILTER_ELEMENT: Final[Literal['filter']] = "filter"
-CLASSID_ELEMENT: Final[Literal['filter']] = "class_id"
+CLASSID_ELEMENT: Final[Literal['class_id']] = "class_id"
 # TODO: https://github.com/mypyc/mypyc/issues/700
 FILTERS_PATH: Final = Path(".") / "filters"  # Path(__file__).parent
 REPORT_ID_PATTERN: Final = re.compile(r"(a10185)(..)")
@@ -130,14 +127,16 @@ def _HIDIOCGRDESC(fd: int) -> "array.array[int]":
     (size,) = cast(tuple[int], struct.unpack("i", _buffer[:4]))
     return _buffer[4 : size + 4]
 
-def _GET_DEVICE_ID(device: _Device):
+def _GET_DEVICE_ID(device: _Device) -> _Device_Id:
     hidraw_file: int | None = os.open('/dev/'+device["hidraw"], os.O_RDWR | os.O_NONBLOCK)
-    desc = "".join(f"{b:02x}" for b in _HIDIOCGRDESC(hidraw_file))
-    descriptor, found = REPORT_ID_PATTERN.subn(r"\1{}", desc)
-    # Or insert one if no report ID exists.
-    if found == 0:
-        descriptor = re.sub(r"(a101)", r"\g<1>85{}", descriptor, count=1)
-    return _Device_Id(device["class_id"], descriptor)
+    if hidraw_file != None:
+        desc = "".join(f"{b:02x}" for b in _HIDIOCGRDESC(hidraw_file))
+        descriptor, found = REPORT_ID_PATTERN.subn(r"\1{}", desc)
+        # Or insert one if no report ID exists.
+        if found == 0:
+            descriptor = re.sub(r"(a101)", r"\g<1>85{}", descriptor, count=1)
+        return hashlib.md5((device["class_id"] + descriptor).encode('utf-8')).hexdigest()
+    return ""
 
 class HIDDevice:
     mapped_ids: dict[int | Literal["_"], bytes]
@@ -328,9 +327,9 @@ class HIDDeviceRegistry:
                             events.extend(input_events)
 
                         device_id = device.split(".")[0]
-                        dev_dict = {"class_id": device_id, "instance": device,
+                        dev_dict: _Device = {"class_id": device_id, "instance": device,
                                      "name": name, "hidraw": hidraw, "events": events,
-                                     "compatibility_mode": compatibility_mode, "id": None}
+                                     "compatibility_mode": compatibility_mode, "id": ""}
                         dev_dict["id"] = _GET_DEVICE_ID(dev_dict)
                         devs.append(dev_dict)
                         
