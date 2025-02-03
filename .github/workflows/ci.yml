@@ -20,8 +20,8 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.11
-    - name: Install libgirepository
-      run: sudo apt install -y libgirepository1.0-dev
+    - name: Install apt dependencies
+      run: sudo apt install -y libcairo2-dev libgirepository1.0-dev
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v4
       with:
