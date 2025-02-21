@@ -83,5 +83,5 @@ You may need to manually make changes to the system to match the changes in the 
 
 ## Misc
 
-Inspired by [RaspiKey](https://github.com/samartzidis/RaspiKey), but wanted the solution to stay wireless, as this is why I bought Apple wireless keyboard in the first place. By doing this it allowed to turn my wired mouse to wireless as well and have one keyboard+mouse for two machines. Also, Python implementation should allow people to easily customize their mappings. 
+Inspired by RaspiKey, which has been replaced by [MagicStick](https://github.com/samartzidis/magicstick.io), but wanted the solution to stay wireless, as this is why I bought Apple wireless keyboard in the first place. By doing this it allowed to turn my wired mouse to wireless as well and have one keyboard+mouse for two machines. Also, Python implementation should allow people to easily customize their mappings. 
 If you want to do this, check out [hid-tools](https://gitlab.freedesktop.org/libevdev/hid-tools) to monitor raw hid reports from your device.
