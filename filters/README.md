@@ -135,7 +135,7 @@ device.
 If you add ``print()`` calls for debugging, you can view the logs with:
 ``journalctl -xeu remapper``
 
-### Using clases to store state
+### Using classes to store state
 
 With the above code, it seems that the double click is only getting recognised as a single
 click. Through more trial and error, comparing working/non-working events we can also
