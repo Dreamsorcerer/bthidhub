@@ -2,7 +2,8 @@ cd $HOME/bthidhub/install/on_rpi
 
 sudo echo 0 | sudo tee /sys/class/leds/ACT/brightness > /dev/null
 
-sudo apt-get install libcairo2-dev libdbus-1-dev libgirepository1.0-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf automake libtool python3-pip -y
+sudo apt-get update
+sudo apt-get install git libcairo2-dev libdbus-1-dev libgirepository1.0-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf automake libtool python3-pip -y
 sudo pip3 install -r $HOME/bthidhub/requirements.txt --break-system-packages
 
 cd $HOME/bthidhub/install/on_rpi
