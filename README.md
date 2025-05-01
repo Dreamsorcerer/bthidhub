@@ -30,19 +30,18 @@ either find an older release or test and fix the install script (and then send u
 3. Plug SD card into the RPi and start it.
 4. Get the IP address of the newly booted RPi.
 
-Windows:
-
-  5. Install putty: https://www.putty.org/
-  6. Edit install_windows.bat and update the IP address and password.
-  7. Run install_windows.bat, follow prompts until complete.
-
-Linux/Mac:
+Linux/Mac/Modern Windows:
 
   5. Run: ``ssh pi@[rpi-ip-address] 'bash -s' < setup.sh``
-     Password, if not change above, is 'raspberry'.
+     Password, if not changed above, is 'raspberry'. Otherwise it's the password set during the raspian install.
+
+Old Windows:
+
+  5. Install putty: https://www.putty.org/
+  6. Run install_windows.bat, follow prompts until complete.
 
 That last step could take an hour to complete.
-When the RPi reboots, the LED will switch off once the service is ready to use.
+When the RPi reboots, the LED will switch off once the service is ready to use. Note: this only happens on the Pi Zero series.
 
 Finally, go to http://[rpi-ip-address]:8080 for the web configuration interface.
 
