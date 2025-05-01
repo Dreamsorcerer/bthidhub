@@ -268,7 +268,7 @@ class HIDDeviceRegistry:
         #input_devices
         self.input_devices = []
 
-        def _filter(d: evdev.InputDevice) -> bool:
+        def _filter(d: evdev.InputDevice[str]) -> bool:
             """Filter out devices without key capability and without esc button."""
             return 1 in d.capabilities().keys() and 1 in d.capabilities()[1] and d.info.bustype != 0x06
 
