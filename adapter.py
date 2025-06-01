@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Container
+from collections.abc import Callable, Container, Coroutine
 from datetime import datetime, timedelta
 from typing import Final, TypedDict, cast
 
@@ -54,8 +54,8 @@ class BluetoothAdapter:
         self.initialising_adapter = False
         self.scan_start_time: datetime | None = None
         self.discoverable_start_time: datetime | None = None
-        self.on_agent_action_handler: Callable[[Action], Awaitable[None]] | None = None
-        self.on_interface_changed_handler: Callable[[], Awaitable[None]] | None = None
+        self.on_agent_action_handler: Callable[[Action], Coroutine[None, None, None]] | None = None
+        self.on_interface_changed_handler: Callable[[], Coroutine[None, None, None]] | None = None
         asyncio.run_coroutine_threadsafe(self.init(), loop=self.loop)
 
     async def init(self) -> None:
@@ -258,7 +258,7 @@ class BluetoothAdapter:
         except:
             pass
 
-    def set_on_agent_action_handler(self, handler: Callable[[Action], Awaitable[None]]) -> None:
+    def set_on_agent_action_handler(self, handler: Callable[[Action], Coroutine[None, None, None]]) -> None:
         self.on_agent_action_handler = handler
 
     def on_agent_action(self, msg: Action) -> None:
@@ -273,7 +273,7 @@ class BluetoothAdapter:
         if self.on_agent_action_handler is not None:
             asyncio.run_coroutine_threadsafe(self.on_agent_action_handler(msg), loop=self.loop)
 
-    def set_on_interface_changed_handler(self, handler: Callable[[], Awaitable[None]]) -> None:
+    def set_on_interface_changed_handler(self, handler: Callable[[], Coroutine[None, None, None]]) -> None:
         self.on_interface_changed_handler = handler
 
     def on_interface_changed(self) -> None:

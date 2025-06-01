@@ -4,7 +4,7 @@ import asyncio
 import socket
 import os
 import sys
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable, Coroutine
 from concurrent.futures import Future
 from contextlib import suppress
 from subprocess import DEVNULL, PIPE
@@ -177,14 +177,14 @@ class BluetoothDeviceRegistry:
         self.all: dict[str, BluetoothDevice] = {}
         self.connected_hosts: list[BluetoothDevice] = []
         self.connected_devices: list[BluetoothDevice] = []
-        self.on_devices_changed_handler: Callable[[], Awaitable[None]] | None = None
+        self.on_devices_changed_handler: Callable[[], Coroutine[None, None, None]] | None = None
         self.hid_devices: HIDDeviceRegistry | None = None
         self.current_host_index = 0
 
     def set_hid_devices(self, hid_devices: "HIDDeviceRegistry") -> None:
         self.hid_devices = hid_devices
 
-    def set_on_devices_changed_handler(self, handler: Callable[[], Awaitable[None]]) -> None:
+    def set_on_devices_changed_handler(self, handler: Callable[[], Coroutine[None, None, None]]) -> None:
         self.on_devices_changed_handler = handler
 
     def add_devices(self) -> None:
@@ -228,8 +228,7 @@ class BluetoothDeviceRegistry:
 
     async def is_slave(self, device_address: str) -> bool:
         proc = await asyncio.create_subprocess_exec("sudo", "hcitool", "con", stdout=PIPE, stderr=sys.stderr)
-        # TODO(mypy1.15): Remove cast
-        stdout, _ = await cast(Awaitable[tuple[bytes, None]], proc.communicate())
+        stdout, _ = await proc.communicate()
         return any("PERIPHERAL" in l and device_address in l for l in stdout.decode().split("\n"))
 
     async def remove_devices(self) -> None:
