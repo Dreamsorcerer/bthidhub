@@ -177,14 +177,14 @@ class BluetoothDeviceRegistry:
         self.all: dict[str, BluetoothDevice] = {}
         self.connected_hosts: list[BluetoothDevice] = []
         self.connected_devices: list[BluetoothDevice] = []
-        self.on_devices_changed_handler: Coroutine[None, None, None] | None = None
+        self.on_devices_changed_handler: Callable[[], Coroutine[None, None, None]] | None = None
         self.hid_devices: HIDDeviceRegistry | None = None
         self.current_host_index = 0
 
     def set_hid_devices(self, hid_devices: "HIDDeviceRegistry") -> None:
         self.hid_devices = hid_devices
 
-    def set_on_devices_changed_handler(self, handler: Coroutine[None, None, None]) -> None:
+    def set_on_devices_changed_handler(self, handler: Callable[[], Coroutine[None, None, None]]) -> None:
         self.on_devices_changed_handler = handler
 
     def add_devices(self) -> None:
