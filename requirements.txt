@@ -5,6 +5,6 @@ dasbus
 evdev>=1.9.2
 hid-tools>=0.7
 mypy==1.17.1
-PyGObject==3.50
+PyGObject==3.54.3
 pyudev
 watchfiles
