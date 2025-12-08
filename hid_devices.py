@@ -3,6 +3,7 @@
 import array
 import asyncio
 import fcntl
+import hashlib
 import importlib
 import os
 import json
@@ -28,9 +29,11 @@ class __Device(TypedDict, total=False):
     capture: bool
     filter: str
 
+_Device_Id: TypeAlias = str
 
 class _Device(__Device):
-    id: str
+    id: _Device_Id
+    class_id: str
     instance: str
     name: str
     hidraw: str
@@ -52,6 +55,7 @@ class _HIDDevices(TypedDict):
 
 
 class _DeviceConfig(TypedDict, total=False):
+    class_id: str
     capture: bool
     descriptor: str
     filter: str
@@ -67,6 +71,7 @@ DEVICES_CONFIG_FILE_NAME: Final = "devices_config.json"
 DEVICES_CONFIG_COMPATIBILITY_DEVICE_KEY: Final = "compatibility_devices"
 CAPTURE_ELEMENT: Final[Literal['capture']] = "capture"
 FILTER_ELEMENT: Final[Literal['filter']] = "filter"
+CLASSID_ELEMENT: Final[Literal['class_id']] = "class_id"
 # TODO: https://github.com/mypyc/mypyc/issues/700
 FILTERS_PATH: Final = Path(".") / "filters"  # Path(__file__).parent
 REPORT_ID_PATTERN: Final = re.compile(r"(a10185)(..)")
@@ -122,7 +127,16 @@ def _HIDIOCGRDESC(fd: int) -> "array.array[int]":
     (size,) = cast(tuple[int], struct.unpack("i", _buffer[:4]))
     return _buffer[4 : size + 4]
 
-
+def _GET_DEVICE_ID(device: _Device) -> _Device_Id:
+    hidraw_file: int | None = os.open('/dev/'+device["hidraw"], os.O_RDWR | os.O_NONBLOCK)
+    if hidraw_file != None:
+        desc = "".join(f"{b:02x}" for b in _HIDIOCGRDESC(hidraw_file))
+        descriptor, found = REPORT_ID_PATTERN.subn(r"\1{}", desc)
+        # Or insert one if no report ID exists.
+        if found == 0:
+            descriptor = re.sub(r"(a101)", r"\g<1>85{}", descriptor, count=1)
+        return hashlib.md5((device["class_id"] + descriptor).encode('utf-8')).hexdigest()
+    return ""
 
 class HIDDevice:
     mapped_ids: dict[int | Literal["_"], bytes]
@@ -132,8 +146,8 @@ class HIDDevice:
         self.loop = loop
         self.filter = filter
         self.device_registry = device_registry
-        self.device_id = device["instance"]
-        self.device_class = device["id"]
+        self.device_instance = device["instance"]
+        self.device_class = device["class_id"]
         self.name = device["name"]
         self.hidraw = device["hidraw"]
         self.events = device["events"]
@@ -144,7 +158,7 @@ class HIDDevice:
             self.events_devices.append(event_device)
         self.hidraw_file: int | None = os.open('/dev/'+self.hidraw, os.O_RDWR | os.O_NONBLOCK)
         loop.add_reader(self.hidraw_file, self.hidraw_event)
-        print("HID Device ",self.device_id," created")
+        print("HID Device ",self.device_instance," created")
         desc = "".join(f"{b:02x}" for b in _HIDIOCGRDESC(self.hidraw_file))
         # Replace report IDs, so they can be remapped later.
         self.internal_ids = tuple(m[1] for m in cast(list[tuple[str, str]], REPORT_ID_PATTERN.findall(desc)))
@@ -152,6 +166,7 @@ class HIDDevice:
         # Or insert one if no report ID exists.
         if found == 0:
             self.descriptor = re.sub(r"(a101)", r"\g<1>85{}", self.descriptor, count=1)
+        self.device_id = _GET_DEVICE_ID(device)
 
     def set_device_filter(self, filter: HIDMessageFilter) -> None:
         self.filter = filter
@@ -166,7 +181,7 @@ class HIDDevice:
             self.loop.remove_reader(self.hidraw_file)
             os.close(self.hidraw_file)
             self.hidraw_file = None
-            print("HID device ",self.device_id, " exception on read. closing")
+            print("HID device ",self.device_instance, " exception on read. closing")
             return
         tm = self.filter(msg)
         if tm is None or self.device_registry.bluetooth_devices is None:
@@ -225,10 +240,10 @@ class HIDDevice:
                 self.hidraw_file = None
             except:
                 pass
-        print("HID Device ",self.device_id," finalised")
+        print("HID Device ",self.device_instance," finalised")
 
     def __del__(self) -> None:
-        print("HID Device ",self.device_id," removed")
+        print("HID Device ",self.device_instance," removed")
 
 
 class HIDDeviceRegistry:
@@ -236,11 +251,11 @@ class HIDDeviceRegistry:
         self.loop = loop
         try:
             with open(DEVICES_CONFIG_FILE_NAME) as devices_config:
-                self.devices_config: dict[str, _DeviceConfig] = json.load(devices_config)
+                self.devices_config: dict[_Device_Id, _DeviceConfig] = json.load(devices_config)
         except Exception:
             self.devices_config = {}
         self.devices: list[_Device] = []
-        self.capturing_devices: dict[str, HIDDevice] = {}
+        self.capturing_devices: dict[_Device_Id, HIDDevice] = {}
         self.input_devices: list[_InputDevice] = []
         self.compatibility_mode_devices: dict[str, CompatibilityModeDevice] = {}
         asyncio.run_coroutine_threadsafe(self.__watch_device_changes(), loop=self.loop)
@@ -312,37 +327,40 @@ class HIDDeviceRegistry:
                             events.extend(input_events)
 
                         device_id = device.split(".")[0]
-                        devs.append({"id": device_id, "instance": device,
+                        dev_dict: _Device = {"class_id": device_id, "instance": device,
                                      "name": name, "hidraw": hidraw, "events": events,
-                                     "compatibility_mode": compatibility_mode})
-                        devs_dict[device] = device_id
+                                     "compatibility_mode": compatibility_mode, "id": ""}
+                        dev_dict["id"] = _GET_DEVICE_ID(dev_dict)
+                        devs.append(dev_dict)
+                        
+                        devs_dict[dev_dict["id"]] = "dummy"
                         if compatibility_mode: devs_in_compatibility_mode.append(device)
             except Exception as exc:
                 print("Error while loading HID device: ", device, ", Error: ", exc,", Skipping.")
         devs_to_remove = []
-        for dev_name in self.capturing_devices:
-            if dev_name not in devs_dict or not self.__is_configured_capturing_device(devs_dict[dev_name]) or dev_name in devs_in_compatibility_mode:
+        for dev_id in self.capturing_devices:
+            if dev_id not in devs_dict or not self.__is_configured_capturing_device(dev_id) or dev_id in devs_in_compatibility_mode:
                 #remove capturing device
-                devs_to_remove.append(dev_name)
+                devs_to_remove.append(dev_id)
 
-        for dev_name in devs_to_remove:
-            hid_device = self.capturing_devices[dev_name]
-            del self.capturing_devices[dev_name]
+        for dev_id in devs_to_remove:
+            hid_device = self.capturing_devices[dev_id]
+            del self.capturing_devices[dev_id]
             hid_device.finalise()
             del hid_device
 
         for dev_dict in devs:
-            if dev_dict["instance"] not in self.capturing_devices and self.__is_configured_capturing_device(dev_dict["id"]) and dev_dict["instance"] not in devs_in_compatibility_mode:
+            if dev_dict["id"] not in self.capturing_devices and self.__is_configured_capturing_device(dev_dict["id"]) and dev_dict["id"] not in devs_in_compatibility_mode:
                 #create capturing device
-                self.capturing_devices[dev_dict["instance"]] = HIDDevice(dev_dict, self.__get_configured_device_filter(dev_dict["id"]), self.loop, self)
+                self.capturing_devices[dev_dict["id"]] = HIDDevice(dev_dict, self.__get_configured_device_filter(dev_dict["id"]), self.loop, self)
 
         recreate_sdp = False
         # Refresh or create config details for currently connected devices.
         for hid_dev in self.capturing_devices.values():
-            dev_config = self.devices_config.get(hid_dev.device_class)
+            dev_config = self.devices_config.get(hid_dev.device_id)
             if not dev_config:
                 dev_config = {}
-                self.devices_config[hid_dev.device_class] = dev_config
+                self.devices_config[hid_dev.device_id] = dev_config
                 recreate_sdp = True
 
             dev_config["descriptor"] = hid_dev.descriptor
@@ -372,24 +390,24 @@ class HIDDeviceRegistry:
 
         # Update the mapped IDs based on latest information.
         for hid_dev in self.capturing_devices.values():
-            config_ids = self.devices_config[hid_dev.device_class]["mapped_ids"]
+            config_ids = self.devices_config[hid_dev.device_id]["mapped_ids"]
             hid_dev.mapped_ids = {k: v.to_bytes() for k,v in config_ids.items()}
         self.devices = devs
 
 
-    def set_device_capture(self, device_id: str, capture: bool) -> None:
+    def set_device_capture(self, device_id: _Device_Id, capture: bool) -> None:
         if device_id not in self.devices_config: self.devices_config[device_id] = {}
         self.devices_config[device_id][CAPTURE_ELEMENT] = capture
         self.__save_config()
         self.__scan_devices()
 
-    def set_device_filter(self, device_id: str, filter_id: str) -> None:
+    def set_device_filter(self, device_id: _Device_Id, filter_id: str) -> None:
         if device_id not in self.devices_config: self.devices_config[device_id] = {}
         self.devices_config[device_id][FILTER_ELEMENT] = filter_id
         self.__save_config()
         filter = self.__get_configured_device_filter(device_id)
         for dev in self.capturing_devices:
-            if self.capturing_devices[dev].device_class == device_id:
+            if self.capturing_devices[dev].device_id == device_id:
                 self.capturing_devices[dev].set_device_filter(filter)
 
     def set_compatibility_device(self, device_path: str, compatibility_state: bool) -> None:
@@ -406,13 +424,13 @@ class HIDDeviceRegistry:
         with open(DEVICES_CONFIG_FILE_NAME, 'w') as devices_config_file:
             json.dump(self.devices_config, devices_config_file)
 
-    def __is_configured_capturing_device(self, device_id: str) -> bool:
+    def __is_configured_capturing_device(self, device_id: _Device_Id) -> bool:
         if device_id in self.devices_config:
             if CAPTURE_ELEMENT in self.devices_config[device_id]:
                 return self.devices_config[device_id][CAPTURE_ELEMENT]
         return False
 
-    def __get_configured_device_filter(self, device_id: str) -> HIDMessageFilter:
+    def __get_configured_device_filter(self, device_id: _Device_Id) -> HIDMessageFilter:
         if device_id in self.devices_config:
             if FILTER_ELEMENT in self.devices_config[device_id]:
                 filter_id = self.devices_config[device_id][FILTER_ELEMENT]
