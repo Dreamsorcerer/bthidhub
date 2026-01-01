@@ -4,7 +4,7 @@ aiohttp-session
 dasbus
 evdev>=1.9.2
 hid-tools>=0.7
-mypy==1.19.0
+mypy==1.19.1
 PyGObject==3.50
 pyudev
 watchfiles
