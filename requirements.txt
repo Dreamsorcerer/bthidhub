@@ -3,7 +3,7 @@ aiohttp-security
 aiohttp-session
 dasbus
 evdev>=1.9.3
-hid-tools>=0.7
+hid-tools>=0.12
 mypy==1.20.2
 PyGObject==3.50
 pyudev
