@@ -8,6 +8,7 @@ from typing import Final, Required, TypedDict
 import dasbus.typing as dt
 from dasbus.server.interface import dbus_interface
 from dasbus.connection import SystemMessageBus
+from mypy_extensions import mypyc_attr
 
 
 class Action(TypedDict, total=False):
@@ -32,17 +33,13 @@ def dev_connect(device_path: str) -> None:
     device.Connect()
 
 
-# Decorator won't work with compiled class as it depends on introspection.
-# If you update anything in this class, then uncomment the below line, and add a
-# print(self.__dbus_xml__) into the init method. Then copy and paste the updated string
-# to replace the hardcoded one below.
-#@dbus_interface("org.bluez.Agent1")
+@dbus_interface("org.bluez.Agent1")
+@mypyc_attr(native_class=False)  # @dbus_interface won't work with native classes.
 class Agent:
     def __init__(self) -> None:
         self.on_agent_action_handler: Callable[[Action], None] | None = None
         self.request_confirmation_device: dt.ObjPath | None = None
         self.request_confirmation_passkey: str | None = None
-        self.__dbus_xml__ = '<node><!--Specifies Agent--><interface name="org.bluez.Agent1"><method name="AuthorizeService"><arg name="device" type="o" direction="in" /><arg name="uuid" type="s" direction="in" /></method><method name="Cancel" /><method name="DisplayPinCode"><arg name="device" type="o" direction="in" /><arg name="pincode" type="s" direction="in" /></method><method name="Release" /><method name="RequestAuthorization"><arg name="device" type="o" direction="in" /></method><method name="RequestConfirmation"><arg name="device" type="o" direction="in" /><arg name="passkey" type="u" direction="in" /></method><method name="RequestPasskey"><arg name="device" type="o" direction="in" /><arg name="return" type="u" direction="out" /></method><method name="RequestPinCode"><arg name="device" type="o" direction="in" /><arg name="return" type="s" direction="out" /></method></interface></node>'
 
     def Release(self) -> None:
         self.on_agent_action({'action':'agent_released'})
